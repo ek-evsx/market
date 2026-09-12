@@ -6,11 +6,12 @@ Monorepo for a small marketplace app. No auth, small dataset.
 
 - `frontend/` — plain React (Vite, no Redux)
 - `backend/src/app.js` — Express app (routes only, no `listen()`)
-- `backend/src/index.js` — local dev entry point, runs the Express app with `listen()`
+- `backend/src/index.js` — Express entry point (`listen()`), used both for local dev and as the
+  Vercel service entrypoint
 - `backend/src/db.js` — database client ([Turso](https://turso.tech)/libSQL via `@libsql/client`)
-- `api/index.js` — Vercel serverless function entry point, just re-exports the Express app
-- `vercel.json` (repo root) — builds the frontend as static output, routes `/api/*` to the
-  serverless function
+- `vercel.json` (repo root) — declares `frontend` and `backend` as two
+  [Vercel services](https://vercel.com/docs/services) in one project, with `/api/*` routed to
+  the backend and everything else to the frontend
 
 ## Database
 
@@ -42,10 +43,14 @@ npm run dev:frontend  # starts Vite on :5173, proxies /api to :3001
 
 ## Deployment
 
-Everything deploys to **Vercel** as a single project: the frontend builds to static files,
-and `api/index.js` becomes a serverless function handling every `/api/*` route.
+Everything deploys to **Vercel** as a single project made of two
+[services](https://vercel.com/docs/services): `frontend` (static Vite build) and `backend`
+(the Express app, run directly — Vercel detects the Express framework and runs
+`backend/src/index.js` as the entrypoint).
 
-1. Create a Vercel project from this repo (root directory, not `frontend/`).
+1. `npx vercel link` from the repo root (not `frontend/`) — this also offers to connect a
+   GitHub repo for auto-deploys on push.
 2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-3. Add a `VERCEL_TOKEN` repo secret so `.github/workflows/deploy.yml` can deploy on push to
-   `main` (or just let Vercel's own GitHub integration handle it instead of the workflow).
+3. Add a `VERCEL_TOKEN` repo secret (GitHub repo → Settings → Secrets and variables → Actions)
+   so `.github/workflows/deploy.yml` can deploy on push to `main` — only needed if you're not
+   relying on Vercel's own GitHub integration from step 1 instead.
