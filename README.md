@@ -110,6 +110,12 @@ npm run seed:sql --workspace backend   # writes backend/scripts/seed.sql
 
 Response: `{ items, page, pageSize, total, totalPages }`.
 
+`GET /api/items/:id` — a single item, with `specs` parsed from its stored JSON string into an
+object (up to 10 category-specific technical characteristics, e.g. Screen Size/RAM/Battery for
+phones). 404 if the id doesn't exist. Powers the item detail view — reached by clicking a card,
+not a real route (same reasoning as "My Orders": avoids SPA-fallback questions under the
+Vercel services setup).
+
 ### Cart
 
 Requires a valid token (see Auth above). Every cart is tied to the `user_id` of whoever

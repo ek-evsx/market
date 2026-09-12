@@ -48,4 +48,25 @@ router.get('/', asyncHandler(async (req, res) => {
   })
 }))
 
+router.get('/:id', asyncHandler(async (req, res) => {
+  const result = await db.execute({
+    sql: 'SELECT * FROM items WHERE id = ?',
+    args: [req.params.id],
+  })
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'Item not found' })
+  }
+
+  const item = result.rows[0]
+  let specs = {}
+  try {
+    specs = item.specs ? JSON.parse(item.specs) : {}
+  } catch {
+    specs = {}
+  }
+
+  res.json({ ...item, specs })
+}))
+
 export default router

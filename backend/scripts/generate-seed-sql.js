@@ -20,7 +20,7 @@ function buildSql() {
       (item) =>
         `  (${sqlString(item.name)}, ${sqlString(item.title)}, ${sqlString(item.description)}, ` +
         `${sqlString(item.category)}, ${item.price}, ${sqlString(item.currency)}, ` +
-        `${sqlString(item.imageUrl)}, ${item.available})`
+        `${sqlString(item.imageUrl)}, ${item.available}, ${sqlString(JSON.stringify(item.specs))})`
     )
     .join(',\n')
 
@@ -33,7 +33,7 @@ function buildSql() {
 
 ${creates}
 
-INSERT INTO items (name, title, description, category, price, currency, image_url, available) VALUES
+INSERT INTO items (name, title, description, category, price, currency, image_url, available, specs) VALUES
 ${values};
 `
 }

@@ -15,6 +15,7 @@ export const SCHEMA_STATEMENTS = [
     currency TEXT NOT NULL DEFAULT 'USD',
     image_url TEXT,
     available INTEGER NOT NULL DEFAULT 0,
+    specs TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS carts (

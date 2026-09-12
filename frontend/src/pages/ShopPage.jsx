@@ -3,9 +3,11 @@ import { useAuth } from '../AuthContext.jsx'
 import Filters from '../components/Filters.jsx'
 import ItemCard from '../components/ItemCard.jsx'
 import Pagination from '../components/Pagination.jsx'
+import ItemDetailPage from './ItemDetailPage.jsx'
 
 function ShopPage() {
   const { apiFetch } = useAuth()
+  const [selectedItemId, setSelectedItemId] = useState(null)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [category, setCategory] = useState('')
@@ -60,6 +62,10 @@ function ShopPage() {
     }
   }, [debouncedSearch, category, page])
 
+  if (selectedItemId) {
+    return <ItemDetailPage itemId={selectedItemId} onBack={() => setSelectedItemId(null)} />
+  }
+
   return (
     <main className="app-main">
       <Filters
@@ -81,7 +87,7 @@ function ShopPage() {
           ) : (
             <div className="grid">
               {items.map((item) => (
-                <ItemCard key={item.id} item={item} />
+                <ItemCard key={item.id} item={item} onSelect={setSelectedItemId} />
               ))}
             </div>
           )}

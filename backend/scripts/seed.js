@@ -17,8 +17,8 @@ async function seed() {
 
   for (const item of items) {
     await db.execute({
-      sql: `INSERT INTO items (name, title, description, category, price, currency, image_url, available)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO items (name, title, description, category, price, currency, image_url, available, specs)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         item.name,
         item.title,
@@ -28,6 +28,7 @@ async function seed() {
         item.currency,
         item.imageUrl,
         item.available,
+        JSON.stringify(item.specs),
       ],
     })
   }

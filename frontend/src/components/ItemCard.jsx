@@ -10,19 +10,20 @@ function formatPrice(price, currency) {
   }
 }
 
-function ItemCard({ item }) {
+function ItemCard({ item, onSelect }) {
   const { addItem } = useCart()
   const [adding, setAdding] = useState(false)
   const inStock = item.available > 0
 
-  async function handleAddToCart() {
+  async function handleAddToCart(e) {
+    e.stopPropagation()
     setAdding(true)
     await addItem(item.id, 1)
     setAdding(false)
   }
 
   return (
-    <div className="card">
+    <div className="card card-clickable" onClick={() => onSelect(item.id)}>
       <img className="card-image" src={item.image_url} alt={item.name} loading="lazy" />
       <div className="card-body">
         <span className="chip">{categoryLabel(item.category)}</span>
