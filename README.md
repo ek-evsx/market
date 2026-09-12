@@ -51,6 +51,13 @@ npm run seed --workspace backend                              # seeds the local 
 TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... npm run seed --workspace backend   # seeds Turso
 ```
 
+To seed via the [Turso web console](https://app.turso.tech) instead of the CLI, generate a
+plain `.sql` file and paste its contents into the database's SQL console there:
+
+```bash
+npm run seed:sql --workspace backend   # writes backend/scripts/seed.sql
+```
+
 ## API
 
 `GET /api/items` — paginated (15 per page, hardcoded), supports:
