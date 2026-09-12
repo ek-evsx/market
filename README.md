@@ -41,6 +41,25 @@ npm run dev:backend   # starts Express on :3001, using the local SQLite file
 npm run dev:frontend  # starts Vite on :5173, proxies /api to :3001
 ```
 
+## Seeding
+
+`backend/scripts/seed.js` drops and recreates the `items` table, then inserts 50 generated
+items across 6 categories (phones, earphones, laptops, tablets, TVs, smartwatches):
+
+```bash
+npm run seed --workspace backend                              # seeds the local SQLite file
+TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... npm run seed --workspace backend   # seeds Turso
+```
+
+## API
+
+`GET /api/items` — paginated (15 per page, hardcoded), supports:
+- `search` — matches against name, title, and description
+- `category` — one of `phones`, `earphones`, `laptops`, `tablets`, `tvs`, `smartwatches`
+- `page` — 1-indexed
+
+Response: `{ items, page, pageSize, total, totalPages }`.
+
 ## Deployment
 
 Everything deploys to **Vercel** as a single project made of two

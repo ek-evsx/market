@@ -2,6 +2,9 @@ import express from 'express'
 import { db } from './db.js'
 
 const app = express()
+const PAGE_SIZE = 15
+
+const CATEGORIES = ['phones', 'earphones', 'laptops', 'tablets', 'tvs', 'smartwatches']
 
 app.use(express.json())
 
@@ -10,36 +13,44 @@ app.get('/api/health', (req, res) => {
 })
 
 app.get('/api/items', async (req, res) => {
-  const result = await db.execute('SELECT * FROM items ORDER BY id DESC')
-  res.json(result.rows)
-})
+  const { search, category } = req.query
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1)
 
-app.post('/api/items', async (req, res) => {
-  const { title, description, price } = req.body
+  const conditions = []
+  const args = []
 
-  if (!title || typeof price !== 'number') {
-    return res.status(400).json({ error: 'title and numeric price are required' })
+  if (category && CATEGORIES.includes(category)) {
+    conditions.push('category = ?')
+    args.push(category)
   }
 
-  const inserted = await db.execute({
-    sql: 'INSERT INTO items (title, description, price) VALUES (?, ?, ?)',
-    args: [title, description || '', price],
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`
+    conditions.push('(name LIKE ? OR title LIKE ? OR description LIKE ?)')
+    args.push(term, term, term)
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  const countResult = await db.execute({
+    sql: `SELECT COUNT(*) AS count FROM items ${where}`,
+    args,
+  })
+  const total = Number(countResult.rows[0].count)
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const itemsResult = await db.execute({
+    sql: `SELECT * FROM items ${where} ORDER BY id ASC LIMIT ? OFFSET ?`,
+    args: [...args, PAGE_SIZE, (page - 1) * PAGE_SIZE],
   })
 
-  const item = await db.execute({
-    sql: 'SELECT * FROM items WHERE id = ?',
-    args: [inserted.lastInsertRowid],
+  res.json({
+    items: itemsResult.rows,
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    totalPages,
   })
-
-  res.status(201).json(item.rows[0])
-})
-
-app.delete('/api/items/:id', async (req, res) => {
-  await db.execute({
-    sql: 'DELETE FROM items WHERE id = ?',
-    args: [req.params.id],
-  })
-  res.status(204).end()
 })
 
 export default app

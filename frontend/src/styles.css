@@ -1,0 +1,213 @@
+:root {
+  --primary: #1976d2;
+  --primary-dark: #115293;
+  --background: #f5f5f5;
+  --surface: #ffffff;
+  --text: #212121;
+  --text-secondary: #757575;
+  --border: #e0e0e0;
+  --success: #2e7d32;
+  --error: #c62828;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--background);
+  color: var(--text);
+}
+
+.app-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.category-select {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.search-input:focus,
+.category-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.results-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.status-text {
+  color: var(--text-secondary);
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.status-text.error {
+  color: var(--error);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  background: var(--border);
+}
+
+.card-body {
+  padding: 0.9rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.chip {
+  align-self: flex-start;
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--primary-dark);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 0.35rem;
+  line-height: 1.3;
+}
+
+.card-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.card-price {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.stock {
+  font-size: 0.75rem;
+}
+
+.stock.in-stock {
+  color: var(--success);
+}
+
+.stock.out-of-stock {
+  color: var(--error);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+}
+
+.pagination button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.5rem 1.1rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.pagination button:disabled {
+  background: var(--border);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
