@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../AuthContext.jsx'
 import Filters from '../components/Filters.jsx'
 import ItemCard from '../components/ItemCard.jsx'
 import Pagination from '../components/Pagination.jsx'
 
 function ShopPage() {
+  const { apiFetch } = useAuth()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [category, setCategory] = useState('')
@@ -35,7 +37,7 @@ function ShopPage() {
     setLoading(true)
     setError(false)
 
-    fetch(`/api/items?${params.toString()}`)
+    apiFetch(`/api/items?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error('Request failed')
         return res.json()

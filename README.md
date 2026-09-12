@@ -1,20 +1,51 @@
 # Market
 
-Monorepo for a small marketplace app. No auth, small dataset.
+Monorepo for a small marketplace app. Single-user login, small dataset.
 
 ## Structure
 
-- `frontend/` — plain React (Vite, no Redux). Cart state lives in `CartContext.jsx`
-  (React Context, no Redux); "My Orders" is a client-side view toggle in `App.jsx`, not a
-  router — order and cart IDs are read from `localStorage`.
-- `backend/src/app.js` — Express app (routes only, no `listen()`), mounts `routes/items.js`,
-  `routes/cart.js`, `routes/orders.js`
+- `frontend/` — plain React (Vite, no Redux). `AuthContext.jsx` holds the login token
+  **in memory only** (lost on reload — see Auth below) and exposes `apiFetch`, which every
+  other fetch call goes through to attach it. Cart state lives in `CartContext.jsx` (React
+  Context, no Redux); "My Orders" is a client-side view toggle in `App.jsx`, not a router —
+  order and cart IDs are read from `localStorage`.
+- `backend/src/app.js` — Express app (routes only, no `listen()`), mounts `routes/auth.js`
+  (public), and `routes/items.js` / `routes/cart.js` / `routes/orders.js` behind
+  `middleware/requireAuth.js`
+- `backend/src/auth.js` — password hashing (`bcryptjs`) and JWT signing/verification
+  (`jsonwebtoken`)
 - `backend/src/index.js` — Express entry point (`listen()`), used both for local dev and as the
   Vercel service entrypoint
 - `backend/src/db.js` — database client ([Turso](https://turso.tech)/libSQL via `@libsql/client`)
 - `vercel.json` (repo root) — declares `frontend` and `backend` as two
   [Vercel services](https://vercel.com/docs/services) in one project, with `/api/*` routed to
   the backend and everything else to the frontend
+
+## Auth
+
+Single-user login, no signup UI:
+
+- `POST /api/auth/register` — `{ username, password }` (password min. 8 chars). Only works
+  **once** — returns `403` if a user already exists, since this app supports exactly one
+  account.
+- `POST /api/auth/login` — `{ username, password }` → `{ token, expiresIn: 900 }`. The token is
+  a JWT (`HS256`, 15-minute expiry) signed with `JWT_SECRET`.
+- Every other endpoint (`/api/items`, `/api/carts/*`, `/api/orders/*`) requires
+  `Authorization: Bearer <token>` and returns `401` if it's missing, malformed, or
+  expired/invalid. `/api/health` and `/api/auth/*` stay public.
+- Passwords are hashed with bcrypt (`password_hash` column) — never stored or logged in plain
+  text.
+- The frontend keeps the token in React state only (not `localStorage`), so a page reload — or
+  the token simply expiring after 15 minutes, since there's no refresh flow — logs you out and
+  shows the login page again. This was a deliberate simplicity/security tradeoff, not a bug.
+
+Locally it falls back to an insecure dev-only constant if `JWT_SECRET` isn't set, so no setup
+is required for `npm run dev:backend`. In the Vercel project's env vars it's required — the
+app **throws on startup** if `JWT_SECRET` is unset with `NODE_ENV=production`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
 ## Database
 
@@ -74,8 +105,9 @@ Response: `{ items, page, pageSize, total, totalPages }`.
 
 ### Cart
 
-No auth — a cart is just a random UUID the client keeps in `localStorage`
-(`market_cart_id`). Quantities are silently clamped to current stock on add/update.
+Requires a valid token (see Auth above). A cart itself still has no owner/auth of its own —
+it's just a random UUID the client keeps in `localStorage` (`market_cart_id`). Quantities are
+silently clamped to current stock on add/update.
 
 - `POST /api/carts` — create a cart, returns `{ id, items: [], total, currency }`
 - `GET /api/carts/:id` — fetch a cart (404 if unknown — the frontend creates a new one)
@@ -106,7 +138,10 @@ Everything deploys to **Vercel** as a single project made of two
 1. `npx vercel link` from the repo root (not `frontend/`) — this also connects a GitHub repo,
    so every push to `main` auto-deploys via Vercel's own GitHub integration (no GitHub Actions
    workflow needed).
-2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-3. Since this app has no auth and is meant to be public, disable **Deployment Protection**
-   in the project settings (it's on by default for new projects and SSO-gates every URL,
-   including `/api/*`).
+2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and
+   `JWT_SECRET`.
+3. Disable **Deployment Protection** in the project settings (it's on by default for new
+   projects and SSO-gates every URL with Vercel's own auth, including `/api/*` — that's on top
+   of, and unrelated to, this app's own login).
+4. Call `POST /api/auth/register` once (e.g. via `curl`) to create the one user account —
+   there's no signup UI.

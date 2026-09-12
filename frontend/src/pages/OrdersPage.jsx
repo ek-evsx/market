@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../AuthContext.jsx'
 import { getOrderIds } from '../CartContext.jsx'
 
 function formatPrice(price, currency) {
@@ -10,6 +11,7 @@ function formatPrice(price, currency) {
 }
 
 function OrdersPage() {
+  const { apiFetch } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -23,7 +25,7 @@ function OrdersPage() {
 
     Promise.all(
       ids.map((id) =>
-        fetch(`/api/orders/${id}`)
+        apiFetch(`/api/orders/${id}`)
           .then((res) => (res.ok ? res.json() : null))
           .catch(() => null)
       )

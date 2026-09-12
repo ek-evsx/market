@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { useAuth } from './AuthContext.jsx'
 
 const CartContext = createContext(null)
 
@@ -21,6 +22,7 @@ function addStoredOrderId(orderId) {
 }
 
 export function CartProvider({ children }) {
+  const { apiFetch } = useAuth()
   const [cartId, setCartId] = useState(null)
   const [cart, setCart] = useState(emptyCart)
   const [loading, setLoading] = useState(true)
@@ -31,7 +33,7 @@ export function CartProvider({ children }) {
   }
 
   async function createCart() {
-    const res = await fetch('/api/carts', { method: 'POST' })
+    const res = await apiFetch('/api/carts', { method: 'POST' })
     const data = await res.json()
     persistCartId(data.id)
     setCart(data)
@@ -39,7 +41,7 @@ export function CartProvider({ children }) {
   }
 
   async function loadCart(id) {
-    const res = await fetch(`/api/carts/${id}`)
+    const res = await apiFetch(`/api/carts/${id}`)
     if (res.status === 404) {
       await createCart()
       return
@@ -56,7 +58,7 @@ export function CartProvider({ children }) {
   }, [])
 
   async function addItem(itemId, quantity = 1) {
-    const res = await fetch(`/api/carts/${cartId}/items`, {
+    const res = await apiFetch(`/api/carts/${cartId}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itemId, quantity }),
@@ -65,7 +67,7 @@ export function CartProvider({ children }) {
   }
 
   async function updateQuantity(itemId, quantity) {
-    const res = await fetch(`/api/carts/${cartId}/items/${itemId}`, {
+    const res = await apiFetch(`/api/carts/${cartId}/items/${itemId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity }),
@@ -74,12 +76,12 @@ export function CartProvider({ children }) {
   }
 
   async function removeItem(itemId) {
-    const res = await fetch(`/api/carts/${cartId}/items/${itemId}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/carts/${cartId}/items/${itemId}`, { method: 'DELETE' })
     if (res.ok) setCart(await res.json())
   }
 
   async function checkout(contact) {
-    const res = await fetch(`/api/carts/${cartId}/checkout`, {
+    const res = await apiFetch(`/api/carts/${cartId}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(contact),
