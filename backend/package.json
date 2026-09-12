@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "build": "echo \"no build step\"",
     "seed": "node scripts/seed.js",
-    "seed:sql": "node scripts/generate-seed-sql.js"
+    "seed:sql": "node scripts/generate-seed-sql.js",
+    "create-user": "node scripts/create-user.js"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

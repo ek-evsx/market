@@ -23,11 +23,18 @@ Monorepo for a small marketplace app. Single-user login, small dataset.
 
 ## Auth
 
-Single-user login, no signup UI:
+Single-user login, no signup UI and no public registration endpoint — the one account is
+created via a script, not the API:
 
-- `POST /api/auth/register` — `{ username, password }` (password min. 8 chars). Only works
-  **once** — returns `403` if a user already exists, since this app supports exactly one
-  account.
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD=supersecret1 npm run create-user --workspace backend
+```
+
+(Don't name the var plain `USERNAME` — it's a reserved/read-only shell variable on macOS that
+silently ignores overrides.) The script refuses to run if a user already exists, matching the
+single-account design. Run it with `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` set to create the
+account on production instead of the local SQLite file, same as seeding.
+
 - `POST /api/auth/login` — `{ username, password }` → `{ token, expiresIn: 900 }`. The token is
   a JWT (`HS256`, 15-minute expiry) signed with `JWT_SECRET`.
 - Every other endpoint (`/api/items`, `/api/carts/*`, `/api/orders/*`) requires
@@ -147,5 +154,5 @@ Everything deploys to **Vercel** as a single project made of two
 3. Disable **Deployment Protection** in the project settings (it's on by default for new
    projects and SSO-gates every URL with Vercel's own auth, including `/api/*` — that's on top
    of, and unrelated to, this app's own login).
-4. Call `POST /api/auth/register` once (e.g. via `curl`) to create the one user account —
-   there's no signup UI.
+4. Run the `create-user` script (see Auth above) with `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`
+   set to create the one user account against production — there's no signup UI or endpoint.
