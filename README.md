@@ -48,9 +48,10 @@ Everything deploys to **Vercel** as a single project made of two
 (the Express app, run directly — Vercel detects the Express framework and runs
 `backend/src/index.js` as the entrypoint).
 
-1. `npx vercel link` from the repo root (not `frontend/`) — this also offers to connect a
-   GitHub repo for auto-deploys on push.
+1. `npx vercel link` from the repo root (not `frontend/`) — this also connects a GitHub repo,
+   so every push to `main` auto-deploys via Vercel's own GitHub integration (no GitHub Actions
+   workflow needed).
 2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-3. Add a `VERCEL_TOKEN` repo secret (GitHub repo → Settings → Secrets and variables → Actions)
-   so `.github/workflows/deploy.yml` can deploy on push to `main` — only needed if you're not
-   relying on Vercel's own GitHub integration from step 1 instead.
+3. Since this app has no auth and is meant to be public, disable **Deployment Protection**
+   in the project settings (it's on by default for new projects and SSO-gates every URL,
+   including `/api/*`).
