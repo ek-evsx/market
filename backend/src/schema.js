@@ -1,5 +1,5 @@
-export const SCHEMA_SQL = `
-  CREATE TABLE IF NOT EXISTS items (
+export const SCHEMA_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     title TEXT NOT NULL,
@@ -10,5 +10,32 @@ export const SCHEMA_SQL = `
     image_url TEXT,
     available INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`
+  )`,
+  `CREATE TABLE IF NOT EXISTS carts (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS cart_items (
+    cart_id TEXT NOT NULL REFERENCES carts(id),
+    item_id INTEGER NOT NULL REFERENCES items(id),
+    quantity INTEGER NOT NULL,
+    PRIMARY KEY (cart_id, item_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    total REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS order_items (
+    order_id TEXT NOT NULL REFERENCES orders(id),
+    item_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    currency TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    PRIMARY KEY (order_id, item_id)
+  )`,
+]

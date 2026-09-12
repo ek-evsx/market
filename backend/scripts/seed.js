@@ -1,10 +1,17 @@
 import { db } from '../src/db.js'
-import { SCHEMA_SQL } from '../src/schema.js'
+import { SCHEMA_STATEMENTS } from '../src/schema.js'
 import { buildItems } from './seed-data.js'
 
 async function seed() {
+  await db.execute('DROP TABLE IF EXISTS order_items')
+  await db.execute('DROP TABLE IF EXISTS orders')
+  await db.execute('DROP TABLE IF EXISTS cart_items')
+  await db.execute('DROP TABLE IF EXISTS carts')
   await db.execute('DROP TABLE IF EXISTS items')
-  await db.execute(SCHEMA_SQL)
+
+  for (const statement of SCHEMA_STATEMENTS) {
+    await db.execute(statement)
+  }
 
   const items = buildItems()
 
@@ -25,7 +32,7 @@ async function seed() {
     })
   }
 
-  console.log(`Seeded ${items.length} items.`)
+  console.log(`Seeded ${items.length} items (carts and orders reset).`)
 }
 
 seed()

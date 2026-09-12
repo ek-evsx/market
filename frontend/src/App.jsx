@@ -1,99 +1,47 @@
-import { useEffect, useState } from 'react'
-import Filters from './components/Filters.jsx'
-import ItemCard from './components/ItemCard.jsx'
-import Pagination from './components/Pagination.jsx'
+import { useState } from 'react'
+import { CartProvider } from './CartContext.jsx'
+import CartButton from './components/CartButton.jsx'
+import CartDrawer from './components/CartDrawer.jsx'
+import ShopPage from './pages/ShopPage.jsx'
+import OrdersPage from './pages/OrdersPage.jsx'
 
 function App() {
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [category, setCategory] = useState('')
-  const [page, setPage] = useState(1)
-
-  const [items, setItems] = useState([])
-  const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebouncedSearch(search), 300)
-    return () => clearTimeout(timeout)
-  }, [search])
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, category])
-
-  useEffect(() => {
-    let ignore = false
-
-    const params = new URLSearchParams()
-    if (debouncedSearch) params.set('search', debouncedSearch)
-    if (category) params.set('category', category)
-    params.set('page', page)
-
-    setLoading(true)
-    setError(false)
-
-    fetch(`/api/items?${params.toString()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Request failed')
-        return res.json()
-      })
-      .then((data) => {
-        if (ignore) return
-        setItems(data.items)
-        setTotalPages(data.totalPages)
-        setTotal(data.total)
-      })
-      .catch(() => {
-        if (!ignore) setError(true)
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false)
-      })
-
-    return () => {
-      ignore = true
-    }
-  }, [debouncedSearch, category, page])
+  const [view, setView] = useState('shop')
+  const [cartOpen, setCartOpen] = useState(false)
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Market</h1>
-      </header>
+    <CartProvider>
+      <div className="app">
+        <header className="app-header">
+          <div className="app-header-inner">
+            <h1>Market</h1>
+            <nav className="app-nav">
+              <button
+                className={`nav-link ${view === 'shop' ? 'active' : ''}`}
+                onClick={() => setView('shop')}
+              >
+                Shop
+              </button>
+              <button
+                className={`nav-link ${view === 'orders' ? 'active' : ''}`}
+                onClick={() => setView('orders')}
+              >
+                My Orders
+              </button>
+              <CartButton onClick={() => setCartOpen(true)} />
+            </nav>
+          </div>
+        </header>
 
-      <main className="app-main">
-        <Filters
-          search={search}
-          onSearchChange={setSearch}
-          category={category}
-          onCategoryChange={setCategory}
+        {view === 'shop' ? <ShopPage /> : <OrdersPage />}
+
+        <CartDrawer
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
+          onViewOrders={() => setView('orders')}
         />
-
-        {loading && <p className="status-text">Loading...</p>}
-        {error && <p className="status-text error">Could not load items. Please try again.</p>}
-
-        {!loading && !error && (
-          <>
-            <p className="results-count">{total} items found</p>
-
-            {items.length === 0 ? (
-              <p className="status-text">No items match your search.</p>
-            ) : (
-              <div className="grid">
-                {items.map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
-              </div>
-            )}
-
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
-        )}
-      </main>
-    </div>
+      </div>
+    </CartProvider>
   )
 }
 

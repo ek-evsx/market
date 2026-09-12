@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { categoryLabel } from '../categories.js'
+import { useCart } from '../CartContext.jsx'
 
 function formatPrice(price, currency) {
   try {
@@ -9,7 +11,15 @@ function formatPrice(price, currency) {
 }
 
 function ItemCard({ item }) {
+  const { addItem } = useCart()
+  const [adding, setAdding] = useState(false)
   const inStock = item.available > 0
+
+  async function handleAddToCart() {
+    setAdding(true)
+    await addItem(item.id, 1)
+    setAdding(false)
+  }
 
   return (
     <div className="card">
@@ -24,6 +34,13 @@ function ItemCard({ item }) {
             {inStock ? `${item.available} available` : 'Out of stock'}
           </span>
         </div>
+        <button
+          className="add-to-cart-button"
+          onClick={handleAddToCart}
+          disabled={!inStock || adding}
+        >
+          {inStock ? (adding ? 'Adding...' : 'Add to Cart') : 'Out of Stock'}
+        </button>
       </div>
     </div>
   )

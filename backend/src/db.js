@@ -2,7 +2,7 @@ import { createClient } from '@libsql/client'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { SCHEMA_SQL } from './schema.js'
+import { SCHEMA_STATEMENTS } from './schema.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -19,4 +19,6 @@ export const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 })
 
-await db.execute(SCHEMA_SQL)
+for (const statement of SCHEMA_STATEMENTS) {
+  await db.execute(statement)
+}

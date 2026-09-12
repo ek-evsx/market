@@ -1,10 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { SCHEMA_SQL } from '../src/schema.js'
+import { SCHEMA_STATEMENTS } from '../src/schema.js'
 import { buildItems } from './seed-data.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const TABLES_NEWEST_FIRST = ['order_items', 'orders', 'cart_items', 'carts', 'items']
 
 function sqlString(value) {
   return `'${String(value).replace(/'/g, "''")}'`
@@ -22,9 +24,14 @@ function buildSql() {
     )
     .join(',\n')
 
-  return `DROP TABLE IF EXISTS items;
+  const drops = TABLES_NEWEST_FIRST.map((t) => `DROP TABLE IF EXISTS ${t};`).join('\n')
+  const creates = SCHEMA_STATEMENTS.map(
+    (stmt) => `${stmt.trim().replace('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE')};`
+  ).join('\n\n')
 
-${SCHEMA_SQL.trim().replace('CREATE TABLE IF NOT EXISTS', 'CREATE TABLE')};
+  return `${drops}
+
+${creates}
 
 INSERT INTO items (name, title, description, category, price, currency, image_url, available) VALUES
 ${values};
