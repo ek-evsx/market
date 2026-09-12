@@ -1,18 +1,24 @@
-import Database from 'better-sqlite3'
+import { createClient } from '@libsql/client'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data')
 
-fs.mkdirSync(dataDir, { recursive: true })
+const url =
+  process.env.TURSO_DATABASE_URL ||
+  `file:${path.join(__dirname, '..', 'data', 'market.sqlite')}`
 
-export const db = new Database(path.join(dataDir, 'market.sqlite'))
+if (url.startsWith('file:')) {
+  fs.mkdirSync(path.dirname(url.slice('file:'.length)), { recursive: true })
+}
 
-db.pragma('journal_mode = WAL')
+export const db = createClient({
+  url,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+})
 
-db.exec(`
+await db.execute(`
   CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
