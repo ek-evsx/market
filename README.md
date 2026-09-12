@@ -105,12 +105,16 @@ Response: `{ items, page, pageSize, total, totalPages }`.
 
 ### Cart
 
-Requires a valid token (see Auth above). A cart itself still has no owner/auth of its own —
-it's just a random UUID the client keeps in `localStorage` (`market_cart_id`). Quantities are
-silently clamped to current stock on add/update.
+Requires a valid token (see Auth above). Every cart is tied to the `user_id` of whoever
+created it (`carts.user_id`, set from the JWT's `sub` claim) — a cart id is still just a random
+UUID kept in `localStorage` (`market_cart_id`), but `GET`/`POST`/`PATCH`/`DELETE`/`checkout` all
+scope their query by `user_id` too, so a token can only ever see its own carts. A cart that
+exists but belongs to someone else 404s exactly like one that doesn't exist, which the frontend
+already treats as "create a new cart" — no special-casing needed. Quantities are silently
+clamped to current stock on add/update.
 
-- `POST /api/carts` — create a cart, returns `{ id, items: [], total, currency }`
-- `GET /api/carts/:id` — fetch a cart (404 if unknown — the frontend creates a new one)
+- `POST /api/carts` — create a cart owned by the caller, returns `{ id, items: [], total, currency }`
+- `GET /api/carts/:id` — fetch a cart (404 if unknown, or owned by a different user)
 - `POST /api/carts/:id/items` — `{ itemId, quantity }`, adds/increments a line
 - `PATCH /api/carts/:id/items/:itemId` — `{ quantity }`, sets an absolute quantity
   (`<= 0` removes the line)

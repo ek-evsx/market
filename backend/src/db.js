@@ -22,3 +22,15 @@ export const db = createClient({
 for (const statement of SCHEMA_STATEMENTS) {
   await db.execute(statement)
 }
+
+// Lightweight migration: add columns introduced after a table already existed
+// (CREATE TABLE IF NOT EXISTS is a no-op on an existing table).
+async function ensureColumn(table, column, definition) {
+  try {
+    await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  } catch (err) {
+    if (!/duplicate column name/i.test(err.message)) throw err
+  }
+}
+
+await ensureColumn('carts', 'user_id', 'TEXT REFERENCES users(id)')

@@ -1,18 +1,18 @@
 import express from 'express'
 import { randomUUID } from 'node:crypto'
+import { asyncHandler } from '../asyncHandler.js'
 import { db } from '../db.js'
 
 const router = express.Router()
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-async function cartExists(cartId) {
-  const result = await db.execute({ sql: 'SELECT id FROM carts WHERE id = ?', args: [cartId] })
-  return result.rows.length > 0
-}
-
-async function loadCart(cartId) {
-  if (!(await cartExists(cartId))) return null
+async function loadCart(cartId, userId) {
+  const cartResult = await db.execute({
+    sql: 'SELECT id FROM carts WHERE id = ? AND user_id = ?',
+    args: [cartId, userId],
+  })
+  if (cartResult.rows.length === 0) return null
 
   const itemsResult = await db.execute({
     sql: `SELECT ci.item_id AS itemId, ci.quantity AS quantity,
@@ -36,38 +36,38 @@ async function loadCart(cartId) {
   return { id: cartId, items, total, currency }
 }
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const id = randomUUID()
-  await db.execute({ sql: 'INSERT INTO carts (id) VALUES (?)', args: [id] })
+  await db.execute({
+    sql: 'INSERT INTO carts (id, user_id) VALUES (?, ?)',
+    args: [id, req.user.sub],
+  })
   res.status(201).json({ id, items: [], total: 0, currency: 'USD' })
-})
+}))
 
-router.get('/:id', async (req, res) => {
-  const cart = await loadCart(req.params.id)
+router.get('/:id', asyncHandler(async (req, res) => {
+  const cart = await loadCart(req.params.id, req.user.sub)
   if (!cart) return res.status(404).json({ error: 'Cart not found' })
   res.json(cart)
-})
+}))
 
-router.post('/:id/items', async (req, res) => {
+router.post('/:id/items', asyncHandler(async (req, res) => {
   const cartId = req.params.id
   const itemId = Number(req.body.itemId)
   const requestedQty = Math.max(1, Number(req.body.quantity) || 1)
 
-  if (!(await cartExists(cartId))) return res.status(404).json({ error: 'Cart not found' })
+  const cart = await loadCart(cartId, req.user.sub)
+  if (!cart) return res.status(404).json({ error: 'Cart not found' })
 
   const itemResult = await db.execute({ sql: 'SELECT available FROM items WHERE id = ?', args: [itemId] })
   if (itemResult.rows.length === 0) return res.status(404).json({ error: 'Item not found' })
   const available = itemResult.rows[0].available
 
-  const existing = await db.execute({
-    sql: 'SELECT quantity FROM cart_items WHERE cart_id = ? AND item_id = ?',
-    args: [cartId, itemId],
-  })
-  const currentQty = existing.rows[0]?.quantity || 0
+  const currentQty = cart.items.find((i) => i.itemId === itemId)?.quantity || 0
   const newQty = Math.min(currentQty + requestedQty, available)
 
   if (newQty > 0) {
-    if (existing.rows.length > 0) {
+    if (currentQty > 0) {
       await db.execute({
         sql: 'UPDATE cart_items SET quantity = ? WHERE cart_id = ? AND item_id = ?',
         args: [newQty, cartId, itemId],
@@ -80,34 +80,32 @@ router.post('/:id/items', async (req, res) => {
     }
   }
 
-  res.json(await loadCart(cartId))
-})
+  res.json(await loadCart(cartId, req.user.sub))
+}))
 
-router.patch('/:id/items/:itemId', async (req, res) => {
+router.patch('/:id/items/:itemId', asyncHandler(async (req, res) => {
   const cartId = req.params.id
   const itemId = Number(req.params.itemId)
   const quantity = Number(req.body.quantity)
 
-  if (!(await cartExists(cartId))) return res.status(404).json({ error: 'Cart not found' })
+  const cart = await loadCart(cartId, req.user.sub)
+  if (!cart) return res.status(404).json({ error: 'Cart not found' })
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
     await db.execute({
       sql: 'DELETE FROM cart_items WHERE cart_id = ? AND item_id = ?',
       args: [cartId, itemId],
     })
-    return res.json(await loadCart(cartId))
+    return res.json(await loadCart(cartId, req.user.sub))
   }
 
   const itemResult = await db.execute({ sql: 'SELECT available FROM items WHERE id = ?', args: [itemId] })
   if (itemResult.rows.length === 0) return res.status(404).json({ error: 'Item not found' })
   const clamped = Math.min(quantity, itemResult.rows[0].available)
 
-  const existing = await db.execute({
-    sql: 'SELECT quantity FROM cart_items WHERE cart_id = ? AND item_id = ?',
-    args: [cartId, itemId],
-  })
+  const existingQty = cart.items.find((i) => i.itemId === itemId)?.quantity || 0
 
-  if (existing.rows.length > 0) {
+  if (existingQty > 0) {
     await db.execute({
       sql: 'UPDATE cart_items SET quantity = ? WHERE cart_id = ? AND item_id = ?',
       args: [clamped, cartId, itemId],
@@ -119,24 +117,25 @@ router.patch('/:id/items/:itemId', async (req, res) => {
     })
   }
 
-  res.json(await loadCart(cartId))
-})
+  res.json(await loadCart(cartId, req.user.sub))
+}))
 
-router.delete('/:id/items/:itemId', async (req, res) => {
+router.delete('/:id/items/:itemId', asyncHandler(async (req, res) => {
   const cartId = req.params.id
   const itemId = Number(req.params.itemId)
 
-  if (!(await cartExists(cartId))) return res.status(404).json({ error: 'Cart not found' })
+  const cart = await loadCart(cartId, req.user.sub)
+  if (!cart) return res.status(404).json({ error: 'Cart not found' })
 
   await db.execute({
     sql: 'DELETE FROM cart_items WHERE cart_id = ? AND item_id = ?',
     args: [cartId, itemId],
   })
 
-  res.json(await loadCart(cartId))
-})
+  res.json(await loadCart(cartId, req.user.sub))
+}))
 
-router.post('/:id/checkout', async (req, res) => {
+router.post('/:id/checkout', asyncHandler(async (req, res) => {
   const cartId = req.params.id
   const name = (req.body.name || '').trim()
   const email = (req.body.email || '').trim()
@@ -145,7 +144,7 @@ router.post('/:id/checkout', async (req, res) => {
     return res.status(400).json({ error: 'A valid name and email are required' })
   }
 
-  const cart = await loadCart(cartId)
+  const cart = await loadCart(cartId, req.user.sub)
   if (!cart) return res.status(404).json({ error: 'Cart not found' })
   if (cart.items.length === 0) return res.status(400).json({ error: 'Cart is empty' })
 
@@ -180,7 +179,7 @@ router.post('/:id/checkout', async (req, res) => {
     })),
     { sql: 'DELETE FROM cart_items WHERE cart_id = ?', args: [cartId] },
     { sql: 'DELETE FROM carts WHERE id = ?', args: [cartId] },
-    { sql: 'INSERT INTO carts (id) VALUES (?)', args: [newCartId] },
+    { sql: 'INSERT INTO carts (id, user_id) VALUES (?, ?)', args: [newCartId, req.user.sub] },
   ]
 
   await db.batch(statements, 'write')
@@ -189,6 +188,6 @@ router.post('/:id/checkout', async (req, res) => {
     orderId,
     cart: { id: newCartId, items: [], total: 0, currency: cart.currency },
   })
-})
+}))
 
 export default router

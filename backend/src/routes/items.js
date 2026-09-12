@@ -1,4 +1,5 @@
 import express from 'express'
+import { asyncHandler } from '../asyncHandler.js'
 import { db } from '../db.js'
 
 const router = express.Router()
@@ -6,7 +7,7 @@ const PAGE_SIZE = 15
 
 const CATEGORIES = ['phones', 'earphones', 'laptops', 'tablets', 'tvs', 'smartwatches']
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { search, category } = req.query
   const page = Math.max(1, parseInt(req.query.page, 10) || 1)
 
@@ -45,6 +46,6 @@ router.get('/', async (req, res) => {
     total,
     totalPages,
   })
-})
+}))
 
 export default router

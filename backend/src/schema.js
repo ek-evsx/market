@@ -19,6 +19,7 @@ export const SCHEMA_STATEMENTS = [
   )`,
   `CREATE TABLE IF NOT EXISTS carts (
     id TEXT PRIMARY KEY,
+    user_id TEXT REFERENCES users(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS cart_items (

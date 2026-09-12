@@ -19,4 +19,9 @@ app.use('/api/items', requireAuth, itemsRouter)
 app.use('/api/carts', requireAuth, cartRouter)
 app.use('/api/orders', requireAuth, ordersRouter)
 
+app.use((err, req, res, next) => {
+  console.error(err)
+  res.status(500).json({ error: 'Internal server error' })
+})
+
 export default app

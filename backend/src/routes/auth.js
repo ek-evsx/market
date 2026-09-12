@@ -1,11 +1,12 @@
 import express from 'express'
 import { randomUUID } from 'node:crypto'
+import { asyncHandler } from '../asyncHandler.js'
 import { db } from '../db.js'
 import { hashPassword, signToken, verifyPassword } from '../auth.js'
 
 const router = express.Router()
 
-router.post('/register', async (req, res) => {
+router.post('/register', asyncHandler(async (req, res) => {
   const username = (req.body.username || '').trim()
   const password = req.body.password || ''
 
@@ -31,9 +32,9 @@ router.post('/register', async (req, res) => {
   }
 
   res.status(201).json({ id, username })
-})
+}))
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const username = (req.body.username || '').trim()
   const password = req.body.password || ''
 
@@ -49,6 +50,6 @@ router.post('/login', async (req, res) => {
 
   const token = signToken(user)
   res.json({ token, expiresIn: 900 })
-})
+}))
 
 export default router
