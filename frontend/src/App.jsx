@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './AuthContext.jsx'
 import { CartProvider } from './CartContext.jsx'
 import CartButton from './components/CartButton.jsx'
 import CartDrawer from './components/CartDrawer.jsx'
+import ChatWidget from './components/ChatWidget.jsx'
 import ShopPage from './pages/ShopPage.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -54,6 +55,8 @@ function MarketApp() {
           onClose={() => setCartOpen(false)}
           onViewOrders={() => setView('orders')}
         />
+
+        <ChatWidget />
       </div>
     </CartProvider>
   )

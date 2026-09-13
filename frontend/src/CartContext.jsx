@@ -85,7 +85,18 @@ export function CartProvider({ children }) {
     return data.orderId
   }
 
-  const value = { cart, loading, addItem, updateQuantity, removeItem, checkout }
+  // Called after a chat turn, since chat tools can add/remove/checkout on the
+  // server side without going through any of the functions above.
+  async function syncFromChat(newCartId) {
+    if (newCartId && newCartId !== cartId) {
+      persistCartId(newCartId)
+      await loadCart(newCartId)
+    } else {
+      await loadCart(cartId)
+    }
+  }
+
+  const value = { cart, cartId, loading, addItem, updateQuantity, removeItem, checkout, syncFromChat }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

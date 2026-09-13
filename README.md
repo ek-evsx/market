@@ -7,11 +7,11 @@ Monorepo for a small marketplace app. Single-user login, small dataset.
 - `frontend/` — plain React (Vite, no Redux). `AuthContext.jsx` holds the login token
   **in memory only** (lost on reload — see Auth below) and exposes `apiFetch`, which every
   other fetch call goes through to attach it. Cart state lives in `CartContext.jsx` (React
-  Context, no Redux); "My Orders" is a client-side view toggle in `App.jsx`, not a router —
-  order and cart IDs are read from `localStorage`.
+  Context, no Redux); "My Orders" is a client-side view toggle in `App.jsx`, not a router.
+  `components/ChatWidget.jsx` is the assistant launcher + modal (also in-memory-only history).
 - `backend/src/app.js` — Express app (routes only, no `listen()`), mounts `routes/auth.js`
-  (public), and `routes/items.js` / `routes/cart.js` / `routes/orders.js` behind
-  `middleware/requireAuth.js`
+  (public), and `routes/items.js` / `routes/cart.js` / `routes/orders.js` / `routes/chat.js`
+  behind `middleware/requireAuth.js`
 - `backend/src/auth.js` — password hashing (`bcryptjs`) and JWT signing/verification
   (`jsonwebtoken`)
 - `backend/src/index.js` — Express entry point (`listen()`), used both for local dev and as the
@@ -135,15 +135,40 @@ clamped to current stock on add/update.
 - `POST /api/carts/:id/checkout` — `{ name, email }`. If any line's quantity now exceeds
   current stock, the whole purchase is rejected with `409` and a `conflicts` list (cart is
   left untouched). Otherwise: decrements `available` for each item, writes an `orders` +
-  `order_items` record, deletes the old cart, and returns `{ orderId, cart }` with a **new**
-  empty cart — the frontend swaps `market_cart_id` to it and appends `orderId` to the
-  `market_order_ids` list in `localStorage`.
+  `order_items` record (with `user_id`), deletes the old cart, and returns `{ orderId, cart }`
+  with a **new** empty cart — the frontend swaps `market_cart_id` to the new id.
 
 ### Orders
 
-- `GET /api/orders/:id` — one order + its line items. The "My Orders" page fetches every id
-  in the client's `market_order_ids` list this way; there's no list-all-orders endpoint since
-  order history is scoped to whatever this browser has bought.
+Requires a valid token; every query is scoped by `orders.user_id` (set from the JWT at
+checkout), so a token can only ever see its own orders.
+
+- `GET /api/orders` — list the caller's own orders (most recent first), each with its items
+- `GET /api/orders/:id` — one order + its line items (404 if unknown or owned by someone else)
+
+### Chat
+
+`POST /api/chat` — a Claude-powered assistant that can drive the rest of the API on the
+user's behalf: search items, view item details, manage the cart, check out, and look up past
+orders. Built with the Anthropic TypeScript SDK's [Tool Runner](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-runner)
+(`client.beta.messages.toolRunner`) — see `backend/src/routes/chat.js`. Each of the 9 tools
+(`backend/src/chat/tools.js`) is a thin wrapper that calls the app's *own* existing endpoints
+over HTTP (`backend/src/chat/apiClient.js`), forwarding the caller's JWT — no separate
+business logic, no new API surface. Model: `claude-haiku-4-5`.
+
+The backend is stateless per request — no chat history is stored server-side. The frontend
+holds the conversation in memory (lost on reload, same tradeoff as the login token) and
+resends it every turn:
+
+```
+Request:  { message: string, history?: MessageParam[], cartId: string }
+Response: { reply: string, history: MessageParam[], cartId: string }
+```
+
+`cartId` is supplied by the client (never guessed by the model) and echoed back — it changes
+after `checkout`, since that tool swaps in a new empty cart just like the REST endpoint does.
+Requires `ANTHROPIC_API_KEY`; the client is constructed lazily so a missing key only fails
+chat requests, not the whole server (same pattern as `JWT_SECRET`).
 
 ## Deployment
 
@@ -155,8 +180,8 @@ Everything deploys to **Vercel** as a single project made of two
 1. `npx vercel link` from the repo root (not `frontend/`) — this also connects a GitHub repo,
    so every push to `main` auto-deploys via Vercel's own GitHub integration (no GitHub Actions
    workflow needed).
-2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and
-   `JWT_SECRET`.
+2. In the Vercel project settings, add env vars `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
+   `JWT_SECRET`, and `ANTHROPIC_API_KEY` (for `/api/chat`).
 3. Disable **Deployment Protection** in the project settings (it's on by default for new
    projects and SSO-gates every URL with Vercel's own auth, including `/api/*` — that's on top
    of, and unrelated to, this app's own login).
