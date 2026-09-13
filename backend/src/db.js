@@ -35,3 +35,4 @@ async function ensureColumn(table, column, definition) {
 
 await ensureColumn('carts', 'user_id', 'TEXT REFERENCES users(id)')
 await ensureColumn('items', 'specs', 'TEXT')
+await ensureColumn('orders', 'user_id', 'TEXT REFERENCES users(id)')

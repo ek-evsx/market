@@ -31,6 +31,7 @@ export const SCHEMA_STATEMENTS = [
   )`,
   `CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
+    user_id TEXT REFERENCES users(id),
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     total REAL NOT NULL,

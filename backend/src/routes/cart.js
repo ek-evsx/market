@@ -166,8 +166,8 @@ router.post('/:id/checkout', asyncHandler(async (req, res) => {
 
   const statements = [
     {
-      sql: 'INSERT INTO orders (id, name, email, total, currency) VALUES (?, ?, ?, ?, ?)',
-      args: [orderId, name, email, cart.total, cart.currency],
+      sql: 'INSERT INTO orders (id, user_id, name, email, total, currency) VALUES (?, ?, ?, ?, ?, ?)',
+      args: [orderId, req.user.sub, name, email, cart.total, cart.currency],
     },
     ...cart.items.map((item) => ({
       sql: 'INSERT INTO order_items (order_id, item_id, name, price, currency, quantity) VALUES (?, ?, ?, ?, ?, ?)',
