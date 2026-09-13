@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../AuthContext.jsx'
-import { getOrderIds } from '../CartContext.jsx'
 
 function formatPrice(price, currency) {
   try {
@@ -14,24 +13,31 @@ function OrdersPage() {
   const { apiFetch } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    const ids = getOrderIds()
+    let ignore = false
+    setLoading(true)
+    setError(false)
 
-    if (ids.length === 0) {
-      setLoading(false)
-      return
+    apiFetch('/api/orders')
+      .then((res) => {
+        if (!res.ok) throw new Error('Request failed')
+        return res.json()
+      })
+      .then((data) => {
+        if (!ignore) setOrders(data.orders)
+      })
+      .catch(() => {
+        if (!ignore) setError(true)
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false)
+      })
+
+    return () => {
+      ignore = true
     }
-
-    Promise.all(
-      ids.map((id) =>
-        apiFetch(`/api/orders/${id}`)
-          .then((res) => (res.ok ? res.json() : null))
-          .catch(() => null)
-      )
-    )
-      .then((results) => setOrders(results.filter(Boolean)))
-      .finally(() => setLoading(false))
   }, [])
 
   return (
@@ -39,12 +45,13 @@ function OrdersPage() {
       <h2 className="page-title">My Orders</h2>
 
       {loading && <p className="status-text">Loading...</p>}
+      {error && <p className="status-text error">Could not load your orders. Please try again.</p>}
 
-      {!loading && orders.length === 0 && (
+      {!loading && !error && orders.length === 0 && (
         <p className="status-text">You haven't placed any orders yet.</p>
       )}
 
-      {!loading && orders.length > 0 && (
+      {!loading && !error && orders.length > 0 && (
         <div className="orders-list">
           {orders.map((order) => (
             <div className="order-card" key={order.id}>

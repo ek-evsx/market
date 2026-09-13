@@ -4,22 +4,8 @@ import { useAuth } from './AuthContext.jsx'
 const CartContext = createContext(null)
 
 const CART_ID_KEY = 'market_cart_id'
-const ORDER_IDS_KEY = 'market_order_ids'
 
 const emptyCart = { items: [], total: 0, currency: 'USD' }
-
-function getStoredOrderIds() {
-  try {
-    return JSON.parse(localStorage.getItem(ORDER_IDS_KEY) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function addStoredOrderId(orderId) {
-  const ids = getStoredOrderIds()
-  localStorage.setItem(ORDER_IDS_KEY, JSON.stringify([orderId, ...ids]))
-}
 
 export function CartProvider({ children }) {
   const { apiFetch } = useAuth()
@@ -94,7 +80,6 @@ export function CartProvider({ children }) {
       throw err
     }
 
-    addStoredOrderId(data.orderId)
     persistCartId(data.cart.id)
     setCart(data.cart)
     return data.orderId
@@ -107,8 +92,4 @@ export function CartProvider({ children }) {
 
 export function useCart() {
   return useContext(CartContext)
-}
-
-export function getOrderIds() {
-  return getStoredOrderIds()
 }
